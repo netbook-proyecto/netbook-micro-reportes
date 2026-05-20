@@ -12,24 +12,24 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "filtros_reporte")
+@Table(name = "filtro_reporte")
 public class FiltroReporte {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int idFiltroReporte;
 
     // ID del estudiante al que aplica el filtro
     @Column(nullable = true)
-    private Long idEstudiante;
+    private int idEstudiante;
 
     // ID del curso (para reportes grupales)
     @Column(nullable = true)
-    private Long idCurso;
+    private int idCurso;
 
     // ID de asignatura (para REPORTE_BITACORA - RF07)
     @Column(nullable = true)
-    private Long idAsignatura;
+    private String nombreAsignatura;
 
     // Período de inicio del filtro
     @Column(nullable = true)

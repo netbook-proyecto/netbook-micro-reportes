@@ -10,6 +10,7 @@ import com.example.netbook.models.request.ActualizarReporte;
 import com.example.netbook.models.request.AgregarReporte;
 import com.example.netbook.repositories.ReporteRepository;
 
+
 @Service
 public class ReporteService {
 
@@ -40,29 +41,28 @@ public class ReporteService {
     }
 
     public String eliminarReporte(int idReporte) {
-        if(reporteRepository.existsById(idReporte)) {
-            reporteRepository.deleteById(idReporte);
-            return "Reporte eliminado correctamente.";
-        }else{
+        Reporte reporte = reporteRepository.findById(idReporte).orElse(null);
+        if(reporte == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reporte no encontrado");
+        } else {
+            reporteRepository.deleteById(idReporte);
+            return "Reporte eliminado correctamente";
         }
     }
-
 
     public Reporte actualizarReporte(ActualizarReporte nuevaReporte){
-        Reporte reporte = reporteRepository.findById(nuevaReporte.getIdReporte()).orElse(null);
-        if(reporte == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Reporte no encontrado.");
-        }else{
-            reporte.setNombreReporte(nuevaReporte.getNombreReporte());
-            reporte.setTipoReporte(nuevaReporte.getTipoReporte());
-            reporte.setDescripcionReporte(nuevaReporte.getDescripcionReporte());
-            reporte.setEstadoReporte(nuevaReporte.getEstadoReporte());
-            
-            
-            return reporteRepository.save(reporte);
+            Reporte reporte = reporteRepository.findById(nuevaReporte.getIdReporte()).orElse(null);
+            if(reporte == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Reporte no encontrado.");
+            }else{
+                reporte.setNombreReporte(nuevaReporte.getNombreReporte());
+                reporte.setTipoReporte(nuevaReporte.getTipoReporte());
+                reporte.setDescripcionReporte(nuevaReporte.getDescripcionReporte());
+                reporte.setEstadoReporte(nuevaReporte.getEstadoReporte());
+                
+                
+                return reporteRepository.save(reporte);
+            }
         }
-
-
+    
     }
-}
