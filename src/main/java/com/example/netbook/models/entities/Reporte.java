@@ -39,7 +39,6 @@ public class Reporte {
     @Column(name = "fecha_reporte", nullable = false, updatable = false)
     private LocalDateTime fechaReporte;
 
-    // Este método se ejecuta automáticamente antes de hacer el INSERT
     @PrePersist
     protected void onCreate() {
         this.fechaReporte = LocalDateTime.now();
