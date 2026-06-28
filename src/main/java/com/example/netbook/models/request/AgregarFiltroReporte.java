@@ -3,23 +3,19 @@ package com.example.netbook.models.request;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class AgregarFiltroReporte {
-    @NotBlank
-    private int idEstudiante;
-
-    @NotBlank
-    private int idCurso;
-
+    
     @NotBlank
     private String nombreAsignatura;
     
-    @NotBlank
+    @NotNull
     private LocalDate periodoInicio; // Formato: "yyyy-MM-dd"
     
-    @NotBlank
+    @NotNull
     private LocalDate periodoFin;    // Formato: "yyyy-MM-dd"
     
     @NotBlank

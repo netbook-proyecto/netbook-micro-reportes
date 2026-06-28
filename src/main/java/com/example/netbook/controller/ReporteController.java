@@ -1,8 +1,10 @@
 package com.example.netbook.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,41 +14,41 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.netbook.models.entities.Reporte;
+import com.example.netbook.models.dto.ReporteDTO;
 import com.example.netbook.models.request.ActualizarReporte;
 import com.example.netbook.models.request.AgregarReporte;
 import com.example.netbook.services.ReporteService;
 
-@RequestMapping("reporte")
 @RestController
+@RequestMapping("/reportes") // Asegúrate de que esta ruta sea la correspondiente en tu controlador
 public class ReporteController {
 
     @Autowired
     private ReporteService reporteService;
 
-    @GetMapping("")
-    public List<Reporte> obtenerTodosLosReportes() {
+    @GetMapping
+    public List<ReporteDTO> obtenerTodosLosReportes() {
         return reporteService.obtenerTodosLosReportes();
     }
 
     @GetMapping("/{idReporte}")
-    public Reporte obtenerReportePorId(@PathVariable int idReporte) {
+    public ReporteDTO obtenerReportePorId(@PathVariable("idReporte") int idReporte) {
         return reporteService.obtenerReportePorId(idReporte);
     }
 
-    @PostMapping("")
-    public Reporte agregarReporte(@RequestBody AgregarReporte nueva) {
+    // CORRECCIÓN AQUÍ: Cambiamos el tipo de retorno de ReporteDTO a Map<String, Object>
+    @PostMapping
+    public Map<String, Object> agregarReporte(@RequestBody AgregarReporte nueva) {
         return reporteService.agregarReporte(nueva);
     }
-    @PutMapping("")
-    public Reporte actualizarReporte(@RequestBody ActualizarReporte nueva) {
+
+    @PutMapping
+    public ReporteDTO actualizarReporte(@RequestBody ActualizarReporte nueva) {
         return reporteService.actualizarReporte(nueva);
     }
-
+    
     @DeleteMapping("/{idReporte}")
-    public String eliminarReporte(@PathVariable int idReporte) {
+    public String eliminarReporte(@PathVariable("idReporte") int idReporte) {
         return reporteService.eliminarReporte(idReporte);
     }
-
-
 }

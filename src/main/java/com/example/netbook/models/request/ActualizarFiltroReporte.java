@@ -5,26 +5,21 @@ import lombok.Data;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 public class ActualizarFiltroReporte {
 
-    @NotBlank
+    @NotNull
     private int idFiltroReporte;
-
-    @NotBlank
-    private int idEstudiante;
-
-    @NotBlank
-    private int idCurso;
 
     @NotBlank
     private String nombreAsignatura;
 
-    @NotBlank
+    @NotNull
     private LocalDate periodoInicio; // Formato: "yyyy-MM-dd"
 
-    @NotBlank
+    @NotNull
     private LocalDate periodoFin;    // Formato: "yyyy-MM-dd"
 
     @NotBlank

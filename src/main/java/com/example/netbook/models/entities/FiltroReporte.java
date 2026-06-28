@@ -10,23 +10,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 
-@Data
 @Entity
+
+@Data
 @Table(name = "filtro_reporte")
 public class FiltroReporte {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int idFiltroReporte;
-
-    // ID del estudiante al que aplica el filtro
-    @Column(nullable = true)
-    private int idEstudiante;
-
-    // ID del curso (para reportes grupales)
-    @Column(nullable = true)
-    private int idCurso;
-
+    
     // ID de asignatura (para REPORTE_BITACORA - RF07)
     @Column(nullable = true)
     private String nombreAsignatura;
@@ -42,4 +35,7 @@ public class FiltroReporte {
     // Tipo de reporte al que aplica este filtro
     @Column(nullable = false)
     private String tipoReporte;
+
+    
+
 }
