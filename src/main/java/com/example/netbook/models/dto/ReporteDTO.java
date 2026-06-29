@@ -3,7 +3,7 @@ package com.example.netbook.models.dto;
 import java.time.LocalDate;
 
 public record ReporteDTO(
-    Integer idReporte,      
+    Integer idReporte,
     String nombreReporte,
     String tipoReporte,
     String descripcionReporte,

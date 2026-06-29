@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,10 +42,13 @@ public class ReporteController {
         return reporteService.agregarReporte(nueva);
     }
 
-    @PutMapping
-    public ReporteDTO actualizarReporte(@RequestBody ActualizarReporte nueva) {
+    @PutMapping("/{idReporte}")
+    public ReporteDTO actualizarReporte(
+        @PathVariable("idReporte") int idReporte,
+        @RequestBody ActualizarReporte nueva) {
+        nueva.setIdReporte(idReporte); // El ID viene de la URL, no del body
         return reporteService.actualizarReporte(nueva);
-    }
+}
     
     @DeleteMapping("/{idReporte}")
     public String eliminarReporte(@PathVariable("idReporte") int idReporte) {

@@ -21,5 +21,6 @@ public class ActualizarReporte {
     
     @NotBlank
     private String estadoReporte;
+
     
 }
