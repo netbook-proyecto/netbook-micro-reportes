@@ -1,5 +1,4 @@
 package com.example.netbook.services;
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -9,9 +8,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.netbook.models.dto.AnotacionDTO;
+import com.example.netbook.models.dto.AuthDTO;
 import com.example.netbook.models.dto.EstudianteDTO;
 import com.example.netbook.models.dto.HojaDeVidaDTO;
 import com.example.netbook.models.dto.ReporteDTO;
@@ -30,17 +31,20 @@ public class ReporteService {
     private final WebClient webClientAcademico;
     private final WebClient webClientHojaDeVida;
     private final WebClient webClientAnotaciones;
+    private final WebClient webClientAuth;
 
     public ReporteService(ReporteRepository reporteRepository,
                         @Qualifier("estudiantesWebClient") WebClient webClientEstudiantes,
                         @Qualifier("academicoWebClient") WebClient webClientAcademico,
                         @Qualifier("hojaDeVidaWebClient") WebClient webClientHojaDeVida,
-                        @Qualifier("anotacionesWebClient") WebClient webClientAnotaciones) {
+                        @Qualifier("anotacionesWebClient") WebClient webClientAnotaciones,
+                        @Qualifier("authWebClient") WebClient webClientAuth) {
         this.reporteRepository = reporteRepository;
         this.webClientEstudiantes = webClientEstudiantes;
         this.webClientAcademico = webClientAcademico;
         this.webClientHojaDeVida = webClientHojaDeVida;
         this.webClientAnotaciones = webClientAnotaciones;
+        this.webClientAuth = webClientAuth;
     }
 
     // --- Mapper: convierte la Entidad en DTO ---
@@ -55,95 +59,127 @@ public class ReporteService {
         return dto;
     }
 
-    
     // =================================================================================
     // MÉTODOS PARA TRAER DATOS DE LOS MICROSERVICIOS QUE ALIMENTAN EL REPORTE
     // =================================================================================
 
-    public List<EstudianteDTO> obtenerTodosLosEstudiantes() {
-        try {
-            return webClientEstudiantes.get()
-                .uri("/estudiantes") // AJUSTAR cuando confirmes el path real
-                .retrieve()
-                .bodyToFlux(EstudianteDTO.class)
-                .collectList()
-                .block();
-        } catch (Exception e) {
-            log.error("Error al obtener estudiantes desde micro-estudiantes: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Estudiantes");
+    // Helper genérico con reintentos para GET simples
+    private <T> T getWithRetries(WebClient client, String uri, Class<T> clazz, String serviceDesc) {
+        int attempts = 3;
+        for (int i = 1; i <= attempts; i++) {
+            try {
+                return client.get()
+                    .uri(uri)
+                    .retrieve()
+                    .bodyToMono(clazz)
+                    .block();
+            } catch (WebClientResponseException e) {
+                if (e.getStatusCode().is5xxServerError() || e.getStatusCode().value() == 404) {
+                    log.warn("Intento {}/{} falló al solicitar {} {}: {}", i, attempts, serviceDesc, uri, e.getStatusCode());
+                    if (i == attempts) {
+                        if (e.getStatusCode().value() == 404) {
+                            throw new ResponseStatusException(HttpStatus.NOT_FOUND, serviceDesc + " no encontrado en el microservicio externo");
+                        }
+                        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+                    }
+                    try { Thread.sleep(200L * i); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    continue;
+                }
+                log.error("Error al obtener {} {} : {}", serviceDesc, uri, e.getMessage());
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Error en comunicación con " + serviceDesc);
+            } catch (Exception e) {
+                log.warn("Error al solicitar {} {}: {}, intento {}/{}", serviceDesc, uri, e.getMessage(), i, attempts);
+                if (i == attempts) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+                try { Thread.sleep(200L * i); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            }
         }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+    }
+
+    // Helper para llamadas que requieren Authorization header (ej. auth)
+    private <T> T getWithRetriesAuth(WebClient client, String uri, String token, Class<T> clazz, String serviceDesc) {
+        int attempts = 3;
+        for (int i = 1; i <= attempts; i++) {
+            try {
+                return client.get()
+                    .uri(uri)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(clazz)
+                    .block();
+            } catch (WebClientResponseException e) {
+                log.warn("Intento {}/{} falló al solicitar {} {}: {}", i, attempts, serviceDesc, uri, e.getStatusCode());
+                if (i == attempts) {
+                    if (e.getStatusCode().value() == 404) {
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, serviceDesc + " no encontrado en el microservicio externo");
+                    }
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+                }
+                try { Thread.sleep(200L * i); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            } catch (Exception e) {
+                log.warn("Error al solicitar {} {}: {}, intento {}/{}", serviceDesc, uri, e.getMessage(), i, attempts);
+                if (i == attempts) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+                try { Thread.sleep(200L * i); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+    }
+
+    // Helper genérico con reintentos para GET que devuelven listas
+    private <T> List<T> getListWithRetries(WebClient client, String uri, Class<T> clazz, String serviceDesc) {
+        int attempts = 3;
+        for (int i = 1; i <= attempts; i++) {
+            try {
+                return client.get()
+                    .uri(uri)
+                    .retrieve()
+                    .bodyToFlux(clazz)
+                    .collectList()
+                    .block();
+            } catch (WebClientResponseException e) {
+                log.warn("Intento {}/{} falló al solicitar lista {} {}: {}", i, attempts, serviceDesc, uri, e.getStatusCode());
+                if (i == attempts) {
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+                }
+                try { Thread.sleep(200L * i); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            } catch (Exception e) {
+                log.warn("Error al solicitar lista {} {}: {}, intento {}/{}", serviceDesc, uri, e.getMessage(), i, attempts);
+                if (i == attempts) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+                try { Thread.sleep(200L * i); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con " + serviceDesc);
+    }
+
+    public List<EstudianteDTO> obtenerTodosLosEstudiantes() {
+        return getListWithRetries(webClientEstudiantes, "/api/estudiantes", EstudianteDTO.class, "Estudiantes");
     }
 
     public EstudianteDTO obtenerEstudiantePorId(Integer idEstudiante) {
-        try {
-            return webClientEstudiantes.get()
-                .uri("/estudiantes/" + idEstudiante) // AJUSTAR cuando confirmes el path real
-                .retrieve()
-                .bodyToMono(EstudianteDTO.class)
-                .block();
-        } catch (Exception e) {
-            log.error("Error al obtener el estudiante {} : {}", idEstudiante, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Estudiante no encontrado en el microservicio externo");
-        }
+        return getWithRetries(webClientEstudiantes, "/api/estudiantes/" + idEstudiante, EstudianteDTO.class, "Estudiantes");
     }
 
     public List<HojaDeVidaDTO> obtenerTodasLasHojasDeVida() {
-        try {
-            return webClientHojaDeVida.get()
-                .uri("/hoja-de-vida") // AJUSTAR cuando confirmes el path real
-                .retrieve()
-                .bodyToFlux(HojaDeVidaDTO.class)
-                .collectList()
-                .block();
-        } catch (Exception e) {
-            log.error("Error al obtener hojas de vida desde micro-hoja-de-vida: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Hoja de Vida");
-        }
+        return getListWithRetries(webClientHojaDeVida, "/hoja-de-vida", HojaDeVidaDTO.class, "HojaDeVida");
     }
 
     public HojaDeVidaDTO obtenerHojaDeVidaPorId(Integer idHojaDeVida) {
-        try {
-            return webClientHojaDeVida.get()
-                .uri("/hoja-de-vida/" + idHojaDeVida) // AJUSTAR cuando confirmes el path real
-                .retrieve()
-                .bodyToMono(HojaDeVidaDTO.class)
-                .block();
-        } catch (Exception e) {
-            log.error("Error al obtener la hoja de vida {} : {}", idHojaDeVida, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hoja de vida no encontrada en el microservicio externo");
-        }
+        return getWithRetries(webClientHojaDeVida, "/hoja-de-vida/" + idHojaDeVida, HojaDeVidaDTO.class, "HojaDeVida");
     }
 
     public List<AnotacionDTO> obtenerTodasLasAnotaciones() {
-        try {
-            return webClientAnotaciones.get()
-                .uri("/anotaciones") // AJUSTAR cuando confirmes el path real
-                .retrieve()
-                .bodyToFlux(AnotacionDTO.class)
-                .collectList()
-                .block();
-        } catch (Exception e) {
-            log.error("Error al obtener anotaciones desde micro-anotaciones: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Anotaciones");
-        }
+        return getListWithRetries(webClientAnotaciones, "/anotaciones", AnotacionDTO.class, "Anotaciones");
     }
 
     public AnotacionDTO obtenerAnotacionPorId(Integer idAnotacion) {
-        try {
-            return webClientAnotaciones.get()
-                .uri("/anotaciones/" + idAnotacion) // AJUSTAR cuando confirmes el path real
-                .retrieve()
-                .bodyToMono(AnotacionDTO.class)
-                .block();
-        } catch (Exception e) {
-            log.error("Error al obtener la anotación {} : {}", idAnotacion, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotación no encontrada en el microservicio externo");
-        }
+        return getWithRetries(webClientAnotaciones, "/anotaciones/" + idAnotacion, AnotacionDTO.class, "Anotaciones");
     }
 
-    // El bean "academicoWebClient" ya existe y queda inyectado (webClientAcademico) listo para usar
-    // aquí mismo con el mismo patrón, apenas confirmes los endpoints reales de micro-academico
-    // (notas, cursos, asignaturas, evaluaciones).
+    // AJUSTAR: path puesto como referencia ("/auth/validate"). Cambialo por el endpoint
+    // real que exponga tu microservicio de auth para validar token / usuario.
+    public AuthDTO validarConexionAuth(String token) {
+        return getWithRetriesAuth(webClientAuth, "/auth/validate", token, AuthDTO.class, "Auth");
+    }
 
     // =================================================================================
     // MÉTODOS ORIGINALES DE REPORTE

@@ -41,4 +41,12 @@ public class WebClientConfig {
                 .baseUrl("http://localhost:5005")
                 .build();
     }
-}   
+
+    // en el application.properties del microservicio de auth.
+    @Bean(name = "authWebClient")
+    public WebClient authWebClient() {
+        return WebClient.builder()
+                .baseUrl("http://localhost:5001")
+                .build();
+    }
+}
