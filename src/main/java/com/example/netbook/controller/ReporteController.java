@@ -1,7 +1,6 @@
 package com.example.netbook.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,7 +19,7 @@ import com.example.netbook.models.request.AgregarReporte;
 import com.example.netbook.services.ReporteService;
 
 @RestController
-@RequestMapping("/reportes") // Asegúrate de que esta ruta sea la correspondiente en tu controlador
+@RequestMapping("/reportes")
 public class ReporteController {
 
     @Autowired
@@ -36,9 +35,8 @@ public class ReporteController {
         return reporteService.obtenerReportePorId(idReporte);
     }
 
-    // CORRECCIÓN AQUÍ: Cambiamos el tipo de retorno de ReporteDTO a Map<String, Object>
     @PostMapping
-    public Map<String, Object> agregarReporte(@RequestBody AgregarReporte nueva) {
+    public ReporteDTO agregarReporte(@RequestBody AgregarReporte nueva) {
         return reporteService.agregarReporte(nueva);
     }
 
@@ -46,7 +44,7 @@ public class ReporteController {
     public ReporteDTO actualizarReporte(
         @PathVariable("idReporte") int idReporte,
         @RequestBody ActualizarReporte nueva) {
-        nueva.setIdReporte(idReporte); // El ID viene de la URL, no del body
+        nueva.setIdReporte(idReporte);
         return reporteService.actualizarReporte(nueva);
 }
     

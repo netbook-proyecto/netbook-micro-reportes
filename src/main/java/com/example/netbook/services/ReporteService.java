@@ -1,9 +1,7 @@
 package com.example.netbook.services;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.example.netbook.models.dto.MensajeriaDTO; // Importante importar el DTO
+import com.example.netbook.models.dto.AnotacionDTO;
+import com.example.netbook.models.dto.EstudianteDTO;
+import com.example.netbook.models.dto.HojaDeVidaDTO;
 import com.example.netbook.models.dto.ReporteDTO;
 import com.example.netbook.models.entities.Reporte;
 import com.example.netbook.models.request.ActualizarReporte;
@@ -26,62 +26,124 @@ public class ReporteService {
     private static final Logger log = LoggerFactory.getLogger(ReporteService.class);
 
     private final ReporteRepository reporteRepository;
-    private final WebClient webClientMensajeria;
+    private final WebClient webClientEstudiantes;
+    private final WebClient webClientAcademico;
+    private final WebClient webClientHojaDeVida;
+    private final WebClient webClientAnotaciones;
 
     public ReporteService(ReporteRepository reporteRepository,
-                        @Qualifier("mensajeriaWebClient") WebClient webClientMensajeria) {
+                        @Qualifier("estudiantesWebClient") WebClient webClientEstudiantes,
+                        @Qualifier("academicoWebClient") WebClient webClientAcademico,
+                        @Qualifier("hojaDeVidaWebClient") WebClient webClientHojaDeVida,
+                        @Qualifier("anotacionesWebClient") WebClient webClientAnotaciones) {
         this.reporteRepository = reporteRepository;
-        this.webClientMensajeria = webClientMensajeria;
+        this.webClientEstudiantes = webClientEstudiantes;
+        this.webClientAcademico = webClientAcademico;
+        this.webClientHojaDeVida = webClientHojaDeVida;
+        this.webClientAnotaciones = webClientAnotaciones;
     }
 
     // --- Mapper: convierte la Entidad en DTO ---
     private ReporteDTO mapToDTO(Reporte reporte) {
-        return new ReporteDTO(
-            reporte.getIdReporte(),
-            reporte.getNombreReporte(),
-            reporte.getTipoReporte(),
-            reporte.getDescripcionReporte(),
-            reporte.getEstadoReporte(),
-            reporte.getFechaReporte()
-        );
+        ReporteDTO dto = new ReporteDTO();
+        dto.setIdReporte(reporte.getIdReporte());
+        dto.setNombreReporte(reporte.getNombreReporte());
+        dto.setTipoReporte(reporte.getTipoReporte());
+        dto.setDescripcionReporte(reporte.getDescripcionReporte());
+        dto.setEstadoReporte(reporte.getEstadoReporte());
+        dto.setFechaReporte(reporte.getFechaReporte());
+        return dto;
     }
 
+    
     // =================================================================================
-    // MÉTODOS PARA LLAMAR AL MICROSERVICIO DE MENSAJERÍA Y TRAER MensajeriaDTO
+    // MÉTODOS PARA TRAER DATOS DE LOS MICROSERVICIOS QUE ALIMENTAN EL REPORTE
     // =================================================================================
 
-    /**
-     * Obtiene todos los mensajes llamando al microservicio de mensajería.
-     */
-    public List<MensajeriaDTO> obtenerTodosLosMensajes() {
+    public List<EstudianteDTO> obtenerTodosLosEstudiantes() {
         try {
-            return webClientMensajeria.get()
-                .uri("/mensajerias") // Corregido: antes apuntaba a /mensajes
+            return webClientEstudiantes.get()
+                .uri("/estudiantes") // AJUSTAR cuando confirmes el path real
                 .retrieve()
-                .bodyToFlux(MensajeriaDTO.class)
+                .bodyToFlux(EstudianteDTO.class)
                 .collectList()
                 .block();
         } catch (Exception e) {
-            log.error("Error al obtener mensajes desde el microservicio de mensajería: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Mensajería");
+            log.error("Error al obtener estudiantes desde micro-estudiantes: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Estudiantes");
         }
     }
 
-    /**
-     * Obtiene un mensaje en específico por su ID desde el microservicio de mensajería.
-     */
-    public MensajeriaDTO obtenerMensajePorId(Integer idMensaje) {
+    public EstudianteDTO obtenerEstudiantePorId(Integer idEstudiante) {
         try {
-            return webClientMensajeria.get()
-                .uri("/mensajerias/" + idMensaje) // Corregido: antes apuntaba a /mensajes/id
+            return webClientEstudiantes.get()
+                .uri("/estudiantes/" + idEstudiante) // AJUSTAR cuando confirmes el path real
                 .retrieve()
-                .bodyToMono(MensajeriaDTO.class)
-                .block(); 
+                .bodyToMono(EstudianteDTO.class)
+                .block();
         } catch (Exception e) {
-            log.error("Error al obtener el mensaje {} : {}", idMensaje, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mensaje no encontrado en el microservicio externo");
+            log.error("Error al obtener el estudiante {} : {}", idEstudiante, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Estudiante no encontrado en el microservicio externo");
         }
     }
+
+    public List<HojaDeVidaDTO> obtenerTodasLasHojasDeVida() {
+        try {
+            return webClientHojaDeVida.get()
+                .uri("/hoja-de-vida") // AJUSTAR cuando confirmes el path real
+                .retrieve()
+                .bodyToFlux(HojaDeVidaDTO.class)
+                .collectList()
+                .block();
+        } catch (Exception e) {
+            log.error("Error al obtener hojas de vida desde micro-hoja-de-vida: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Hoja de Vida");
+        }
+    }
+
+    public HojaDeVidaDTO obtenerHojaDeVidaPorId(Integer idHojaDeVida) {
+        try {
+            return webClientHojaDeVida.get()
+                .uri("/hoja-de-vida/" + idHojaDeVida) // AJUSTAR cuando confirmes el path real
+                .retrieve()
+                .bodyToMono(HojaDeVidaDTO.class)
+                .block();
+        } catch (Exception e) {
+            log.error("Error al obtener la hoja de vida {} : {}", idHojaDeVida, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hoja de vida no encontrada en el microservicio externo");
+        }
+    }
+
+    public List<AnotacionDTO> obtenerTodasLasAnotaciones() {
+        try {
+            return webClientAnotaciones.get()
+                .uri("/anotaciones") // AJUSTAR cuando confirmes el path real
+                .retrieve()
+                .bodyToFlux(AnotacionDTO.class)
+                .collectList()
+                .block();
+        } catch (Exception e) {
+            log.error("Error al obtener anotaciones desde micro-anotaciones: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar con Anotaciones");
+        }
+    }
+
+    public AnotacionDTO obtenerAnotacionPorId(Integer idAnotacion) {
+        try {
+            return webClientAnotaciones.get()
+                .uri("/anotaciones/" + idAnotacion) // AJUSTAR cuando confirmes el path real
+                .retrieve()
+                .bodyToMono(AnotacionDTO.class)
+                .block();
+        } catch (Exception e) {
+            log.error("Error al obtener la anotación {} : {}", idAnotacion, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Anotación no encontrada en el microservicio externo");
+        }
+    }
+
+    // El bean "academicoWebClient" ya existe y queda inyectado (webClientAcademico) listo para usar
+    // aquí mismo con el mismo patrón, apenas confirmes los endpoints reales de micro-academico
+    // (notas, cursos, asignaturas, evaluaciones).
 
     // =================================================================================
     // MÉTODOS ORIGINALES DE REPORTE
@@ -100,8 +162,7 @@ public class ReporteService {
         return mapToDTO(reporte);
     }
 
-    // Se cambia el retorno a Map<String, Object> para poder devolver el ReporteDTO y el ID del mensaje
-    public Map<String, Object> agregarReporte(AgregarReporte nueva) {
+    public ReporteDTO agregarReporte(AgregarReporte nueva) {
         Reporte reporte = new Reporte();
         reporte.setNombreReporte(nueva.getNombreReporte());
         reporte.setTipoReporte(nueva.getTipoReporte());
@@ -110,41 +171,7 @@ public class ReporteService {
         reporte.setFechaReporte(LocalDate.now());
 
         Reporte reporteGuardado = reporteRepository.save(reporte);
-
-        Map<String, Object> notificacion = new HashMap<>();
-        notificacion.put("asunto", "Nuevo Reporte: " + reporteGuardado.getNombreReporte());
-        notificacion.put("cuerpoMensaje",
-            "Se generó el reporte de tipo '" + reporteGuardado.getTipoReporte() +
-            "' con estado: " + reporteGuardado.getEstadoReporte() +
-            ". Descripción: " + reporteGuardado.getDescripcionReporte()
-        );
-        notificacion.put("estadoLectura", "NO_LEIDO");
-
-        Integer idMensajeGenerado = null;
-
-        try {
-            // Se cambia bodyToMono a MensajeriaDTO.class para capturar la respuesta
-            MensajeriaDTO respuestaMensajeria = webClientMensajeria.post()
-                .uri("/mensajerias") // Corregido: antes apuntaba a /notificaciones (Daba error 404)
-                .bodyValue(notificacion)
-                .retrieve()
-                .bodyToMono(MensajeriaDTO.class)
-                .block();
-
-            if (respuestaMensajeria != null) {
-                // Obtenemos el ID generado desde el record MensajeriaDTO
-                idMensajeGenerado = respuestaMensajeria.idMensaje();
-            }
-        } catch (Exception e) {
-            log.warn("Advertencia: no se pudo notificar a Mensajería: {}", e.getMessage());
-        }
-
-        // Preparamos la respuesta que incluye el reporte y la confirmación de la mensajería
-        Map<String, Object> resultado = new HashMap<>();
-        resultado.put("reporte", mapToDTO(reporteGuardado));
-        resultado.put("idMensajeCreado", idMensajeGenerado); // Será null si hubo un error en la conexión
-
-        return resultado;
+        return mapToDTO(reporteGuardado);
     }
 
     public ReporteDTO actualizarReporte(ActualizarReporte nueva) {
