@@ -1,5 +1,4 @@
 package com.example.netbook.controller;
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.netbook.models.dto.EstudianteDTO;
 import com.example.netbook.models.dto.ReporteDTO;
 import com.example.netbook.models.request.ActualizarReporte;
 import com.example.netbook.models.request.AgregarReporte;
@@ -52,5 +52,23 @@ public class ReporteController {
     @DeleteMapping("/{idReporte}")
     public String eliminarReporte(@PathVariable("idReporte") int idReporte) {
         return reporteService.eliminarReporte(idReporte);
+    }
+
+    // =================================================================================
+    // ENDPOINTS DE SOLO LECTURA hacia el microservicio Estudiantes.
+    // Reporte NO crea estudiantes (eso vive en el microservicio Estudiantes);
+    // aquí solo se consultan datos para alimentar los reportes.
+    // Llaman a los métodos de ReporteService que ya hacían la llamada WebClient
+    // pero que hasta ahora no estaban conectados a ningún endpoint.
+    // =================================================================================
+
+    @GetMapping("/estudiantes")
+    public List<EstudianteDTO> obtenerTodosLosEstudiantes() {
+        return reporteService.obtenerTodosLosEstudiantes();
+    }
+
+    @GetMapping("/estudiantes/{idEstudiante}")
+    public EstudianteDTO obtenerEstudiantePorId(@PathVariable("idEstudiante") Integer idEstudiante) {
+        return reporteService.obtenerEstudiantePorId(idEstudiante);
     }
 }

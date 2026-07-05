@@ -168,10 +168,12 @@ public class ReporteService {
     }
 
     public List<AnotacionDTO> obtenerTodasLasAnotaciones() {
+        // AJUSTAR: path puesto como referencia. Confirma el path real del controller de micro-anotaciones.
         return getListWithRetries(webClientAnotaciones, "/anotaciones", AnotacionDTO.class, "Anotaciones");
     }
 
     public AnotacionDTO obtenerAnotacionPorId(Integer idAnotacion) {
+        // AJUSTAR: path puesto como referencia. Confirma el path real del controller de micro-anotaciones.
         return getWithRetries(webClientAnotaciones, "/anotaciones/" + idAnotacion, AnotacionDTO.class, "Anotaciones");
     }
 

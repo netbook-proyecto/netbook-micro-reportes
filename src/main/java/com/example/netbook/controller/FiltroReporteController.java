@@ -42,6 +42,7 @@ public class FiltroReporteController {
     public FiltroReporte agregarFiltroReporte(@Valid @RequestBody AgregarFiltroReporte nuevo) {
         return filtroreporteService.agregarFiltroReporte(nuevo);
     }
+    
     @PutMapping("")
     public FiltroReporte actualizarFiltroReporte(@Valid @RequestBody ActualizarFiltroReporte nuevo) {
         return filtroreporteService.actualizarFiltroReporte(nuevo);
