@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.netbook.models.dto.CursoDTO;
+import com.example.netbook.models.dto.EstudianteDTO;
 import com.example.netbook.models.entities.FiltroReporte;
 import com.example.netbook.models.request.ActualizarFiltroReporte;
 import com.example.netbook.models.request.AgregarFiltroReporte;
@@ -53,5 +55,13 @@ public class FiltroReporteController {
         return filtroreporteService.eliminarFiltroReportePorId(idFiltroReporte);
     }
 
+    // =================================================================================
+    // NUEVO: filtro de estudiantes por curso (POST hacia microservicio Estudiantes)
+    // =================================================================================
+
+    @PostMapping("/estudiantes/curso")
+    public List<EstudianteDTO> obtenerEstudiantesPorCurso(@Valid @RequestBody CursoDTO curso) {
+        return filtroreporteService.obtenerEstudiantesPorCurso(curso);
+    }
 
 }
