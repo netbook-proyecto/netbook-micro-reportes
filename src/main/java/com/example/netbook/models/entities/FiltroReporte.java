@@ -18,18 +18,19 @@ public class FiltroReporte {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int idFiltroReporte;
-    
+    @Column(name = "id_filtro_reporte")
+    private Integer idFiltroReporte;
+
     // ID de asignatura (para REPORTE_BITACORA - RF07)
-    @Column(nullable = true)
+    @Column(nullable = false)
     private String nombreAsignatura;
 
     // Período de inicio del filtro
-    @Column(nullable = true)
+    @Column(nullable = false)
     private LocalDate periodoInicio;
 
     // Período de fin del filtro
-    @Column(nullable = true)
+    @Column(nullable = false)
     private LocalDate periodoFin;
 
     // Tipo de reporte al que aplica este filtro

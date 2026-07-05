@@ -3,6 +3,7 @@ package com.example.netbook.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,11 +39,11 @@ public class FiltroReporteController {
     }
 
     @PostMapping("")
-    public FiltroReporte agregarFiltroReporte(@RequestBody AgregarFiltroReporte nuevo) {
+    public FiltroReporte agregarFiltroReporte(@Valid @RequestBody AgregarFiltroReporte nuevo) {
         return filtroreporteService.agregarFiltroReporte(nuevo);
     }
     @PutMapping("")
-    public FiltroReporte actualizarFiltroReporte(@RequestBody ActualizarFiltroReporte nuevo) {
+    public FiltroReporte actualizarFiltroReporte(@Valid @RequestBody ActualizarFiltroReporte nuevo) {
         return filtroreporteService.actualizarFiltroReporte(nuevo);
     }
 
@@ -53,6 +54,3 @@ public class FiltroReporteController {
 
 
 }
-
-
-
