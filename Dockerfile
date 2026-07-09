@@ -1,0 +1,23 @@
+# ETAPA 1: Construcción (Compilación del JAR)
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
+WORKDIR /app
+
+# Copiar archivos de configuración de Maven
+COPY pom.xml .
+COPY src ./src
+
+# Compilar el proyecto saltándose los tests para ahorrar tiempo
+RUN mvn clean package -DskipTests
+
+# ETAPA 2: Ejecución (Contenedor ligero final)
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# Copiar el archivo .jar generado en la Etapa 1
+COPY --from=build /app/target/micro_reporte-0.0.1-SNAPSHOT.jar app.jar
+
+# Exponer el puerto oficial asignado a este microservicio
+EXPOSE 5007
+
+# Comando definitivo para arrancar la aplicación nativa en nube
+ENTRYPOINT ["java", "-jar", "app.jar"]
